@@ -5,8 +5,10 @@ Author: Ariba
 
 from datetime import datetime
 from dataclasses import dataclass, field
+from typing import Union, ClassVar
 
 
+@dataclass
 class BudgetLineItem:
     """
     A class used to represent a budget line item
@@ -20,58 +22,49 @@ class BudgetLineItem:
 
     """
 
-    category = set()
-    frequency = {
-        "Daily",
-        "Weekly",
-        "Fortnightly",
-        "Monthly",
-        "Bi-Monthly",
-        "Quarterly",
-        "Annually",
-    }
+    category: Union[str, None] = None
+    description: str = ""
+    value: float = 0.0
+    frequency: str = ""
 
-    def __init__(self, budget_line_item: dict = None):
-        """A constructor for the Budget Line Item"""
-        self.line_item = budget_line_item
+    _category: Union[str, None] = field(init=False, repr=False)
+    _frequency: str = field(init=False, repr=False)
+    _FREQUENCY: ClassVar[tuple] = ("Daily", "Weekly", "Fortnightly", "Monthly")
+    _main_category: ClassVar[set] = set()
+
+    line_item: dict = field(init=False, repr=False)
+
+    def __post_init__(self):
+
+        self.line_item = {
+            "category": self._category,
+            "description": self.description.title(),
+            "value": self.value,
+            "frequency": self._frequency,
+        }
 
     @property
-    def line_item(self):
-        """Returns the budget line item contents"""
-        return self._line_item
+    def category(self):
+        return self._category
 
-    @line_item.setter
-    def line_item(self, budget_line_item):
-        """Sets the budget line item from the input value"""
-        line_item = {}
-
-        if budget_line_item["category"]:
-            BudgetLineItem.category.add(budget_line_item["category"].title())
-            line_item["category"] = budget_line_item["category"].title()
+    @category.setter
+    def category(self, category):
+        if category:
+            self._category = category.title()
+            BudgetLineItem._main_category.add(self._category)
         else:
-            line_item["category"] = None
+            self._category = category
 
-        line_item["description"] = budget_line_item["description"].title()
+    @property
+    def frequency(self):
+        return self._frequency
 
-        line_item["value"] = budget_line_item["value"]
-
-        if budget_line_item["frequency"].title() not in BudgetLineItem.frequency:
-            raise ValueError(
-                f'{budget_line_item["frequency"].title()} is not supported'
-            )
-        line_item["frequency"] = budget_line_item["frequency"].title()
-
-        if budget_line_item["billing_start_date"]:
-            line_item["billing_start_date"] = datetime.fromisoformat(
-                budget_line_item["billing_start_date"]
-            )
-        if budget_line_item["billing_period"]:
-            line_item["billing_period"] = int(budget_line_item["billing_period"])
-        self._line_item = line_item
-        return self._line_item
-
-    def update_line_item(self, budget_line_item, attribute):
-        pass
+    @frequency.setter
+    def frequency(self, frequency):
+        if frequency.title() not in BudgetLineItem._FREQUENCY:
+            raise ValueError(f"{frequency.title()} is not supported")
+        else:
+            self._frequency = frequency.title()
 
 
 class Budget:
